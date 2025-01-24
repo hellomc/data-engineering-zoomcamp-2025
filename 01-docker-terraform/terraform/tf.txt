@@ -1,0 +1,117 @@
+1 htop
+2  ls
+3  gcloud --version
+4  wget wget https://repo.anaconda.com/archive/Anaconda3-2024.10-1-Linux-x86_64.sh
+26  bash Anaconda3-2024.10-1-Linux-x86_64.sh 
+33  sudo apt-get update
+34  sudo apt-get install docker.io
+35  git clone https://github.com/DataTalksClub/data-engineering-zoomcamp.git
+36  ls
+37  cd data-engineering-zoomcamp/
+38  ls
+39  cd ..
+40  docker -help
+41  docker run hello-world
+42  sudo groupadd docker
+43  sudo gpasswd -a $USER docker
+44  sudo service docker restart
+48  docker run hello-world
+50  docker run -it ubuntu bash
+51  mkdir bin
+52  cd bin/
+53  wget https://github.com/docker/compose/releases/download/v2.32.4/docker-compose-linux-x86_64 -O docker-compose
+54  ls
+55  chmod +x docker-compose 
+56  ls
+57  ./docker-compose version
+58  cd
+59  nano .bash
+60  nano .bashrc
+61  which docker-compose
+62  source .bashrc
+63  which docker-compose
+64  cd data-engineering-zoomcamp/
+65  ls
+66  cd 01-docker-terraform
+67  ls
+68  cd 2_docker_sql/
+69  ls
+70  docker-compose up -d
+71  docker ps
+72  cd data-engineering-zoomcamp/
+73  cd ../../..
+74  cd data-engineering-zoomcamp/
+75  cd
+76  clear
+77  pip install pgcli
+78  pgcli -h localhost -u root -d ny_taxi
+79  docker ps
+80  clear
+81  cd data-engineering-zoomcamp/
+82  ls
+83  cd 01-docker-terraform/
+84  ls
+85  cd 2_docker_sql/
+86  jupyter notebook 
+87  wget https://releases.hashicorp.com/terraform/1.10.5/terraform_1.10.5_linux_amd64.zip
+88  unzip terraform_1.10.5_linux_amd64.zip 
+89  apt install unzip
+90  sudo apt install unzip
+91  clear
+92  unzip terraform_1.10.5_linux_amd64.zip 
+93  ls
+94  rm terraform_1.10.5_linux_amd64.zip 
+95  mv terraform bin/.
+96  ls
+97  terraform -version
+98  ls
+99  01-docker-terraform/1_terraform_gcp/
+100  clear
+101  ls
+102  cd 01-docker-terraform/1_terraform_gcp/
+103  clear
+104  cd terraform/
+105  ls
+106  cd terraform_with_variables/
+107  ls
+108  clear
+109  cd data-engineering-zoomcamp/01-docker-terraform/
+110  ls
+111  cd 1_terraform_gcp/
+112  ls
+113  cd 1_t
+114  cd terraform/
+115  ls
+116  cd terraform_with_variables/
+117  clear
+118  terraform init
+119  terraform plan
+120  source .bashrc
+121  clear
+122  terraform destroy
+123  terraform init
+124  cd data-engineering-zoomcamp/01-docker-terraform/1_terraform_gcp/
+125  ls
+126  cd terraform/
+127  ls
+128  cd terraform_with_variables/
+129  clear
+130  terraform init
+131  terraform plan
+132  ls
+133  terraform plan
+134  terraform apply
+135  terraform destroy
+136  sudo shutdown
+137  cd data-engineering-zoomcamp/01-docker-terraform/1_terraform_gcp/terraform/terraform_with_variables/
+138  clear
+139  terraform init
+140  terraform plan
+141  terraform apply
+142  terraform destroy
+143  terraform apply
+144  terraform destroy
+145  clear
+146  exit
+147  exit
+148  history
