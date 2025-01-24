@@ -1,0 +1,32 @@
+docker-compose up
+
+docker run -it \
+  -e POSTGRES_USER="root" \
+  -e POSTGRES_PASSWORD="root" \
+  -e POSTGRES_DB="ny_taxi" \
+  -v $(pwd)/ny_taxi_postgres_data:/var/lib/postgresql/data:rw \
+  -p 5432:5432 \
+  postgres:13
+
+docker run -it \
+  -e PGADMIN_DEFAULT_EMAIL="admin@admin.com" \
+  -e PGADMIN_DEFAULT_PASSWORD="root" \
+  -p 8080:80
+  dpage/pgadmin4
+
+pgcli -h localhost -p 5432 -u root -d ny_taxi
+
+docker build -t ingest_taxi:v001 .
+
+docker run -it --network=pg-network ingest_taxi:v001 --user=root --password=root --host=pgdatabase --port=5432 --db=ny_taxi --tb=yellow_taxi_data --url=https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz
+
+docker run -it --network=pg-network ingest_taxi:v002 --user=root --password=root --host=pgdatabase --port=5432 --db=ny_taxi --tb=green_taxi_data --url=https://github.com/DataTalksClub/nyc-tlc-data/releases/download/green/green_tripdata_2019-10.csv.gz
+
+python load-data.py --user root --password root --host pgdatabase --port 5432 --db ny_taxi --tb yellow_taxi_data --url https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-01.parquet
+
+January 2021 yellow taxi data
+https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-01.parquet
+https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz
+October 2019 green taxi data
+https://d37ci6vzurychx.cloudfront.net/trip-data/green_tripdata_2019-10.parquet
+https://github.com/DataTalksClub/nyc-tlc-data/releases/download/green/green_tripdata_2019-10.csv.gz
