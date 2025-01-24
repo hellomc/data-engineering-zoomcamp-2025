@@ -3,3 +3,4 @@
 *.parquet
 
 01-docker-terraform/docker-sql/ny_taxi_postgres_data/
+01-docker-terraform/docker-sql/.ipynb_checkpoints/
