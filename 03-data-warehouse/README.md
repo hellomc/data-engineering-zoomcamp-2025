@@ -2,11 +2,9 @@
 
 ## Environment Setup
 
-Manually downloaded parquet files
+Manually download parquet files *=[1, 6]
 
     wget https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-0*.parquet
-
-*=[1, 6]
 
 Create an external table using the yellow taxi trip records
 
@@ -21,6 +19,10 @@ Run query to get 10 records
     SELECT * FROM kestra-sandbox-449221.ny_taxi.external_yellow_tripdata limit 10;
 
 ![text](/03-data-warehouse/img/Screenshot%202025-02-04%20at%202.38.50 PM.png)
+
+Create a materialized table using the yellow taxi trip records from GCP Bucket
+
+![text](/03-data-warehouse/img/Screenshot%202025-02-04%20at%2010.50.15 PM.png)
 
 ## Q1
 
@@ -75,6 +77,10 @@ Answer BigQuery is a columnar database, and it only scans the specific columns r
 ## Q4
 
 How many records have a fare amount of 0?
+
+    SELECT COUNT(fare_amount)
+        FROM kestra-sandbox-449221.ny_taxi.yellow_taxi_data
+            WHERE fare_amount = 0.0;
 
 * 128,210
 * 546,578
@@ -150,4 +156,4 @@ No Points: Write a SELECT count(*) query FROM the materialized table you created
     SELECT COUNT(*)
         FROM kestra-sandbox-449221.ny_taxi.yellow_taxi_data;
 
-Answer 0 bytes Why?
+Answer 0 bytes Why? Is it because the data is already cached in Big Query.
