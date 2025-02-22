@@ -1,4 +1,4 @@
-id: 07_gcp_dbt
+id: 04_gcp_dbt
 namespace: zoomcamp
 inputs:
   - id: dbt_command

@@ -1,5 +1,5 @@
 
-id: 06_gcp_taxi_scheduled
+id: 03_gcp_taxi_scheduled
 namespace: zoomcamp
 description: |
   Best to add a label `backfill:true` from the UI to track executions created via a backfill.
@@ -315,3 +315,9 @@ triggers:
     cron: "0 10 1 * *"
     inputs:
       taxi: yellow
+  
+  - id: fhv_schedule
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "0 11 1 * *"
+    inputs:
+      taxi: fhv
