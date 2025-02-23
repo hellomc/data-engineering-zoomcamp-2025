@@ -196,26 +196,46 @@ Answer green: {best: 2020/Q1, worst: 2020/Q2}, yellow: {best: 2020/Q1, worst: 20
 ```sql
 {{ config(materialized='table') }}
 
+with filtered_trips AS (
+    SELECT
+        service_type,
+        EXTRACT(YEAR FROM pickup_datetime) AS year,
+        EXTRACT(MONTH FROM pickup_datetime) AS month,
+        fare_amount
+    FROM {{ ref('fact_trips') }}
+    WHERE
+        fare_amount > 0
+        AND trip_distance > 0
+        AND payment_type_description IN ('Cash', 'Credit card')
+)
+
 SELECT
     service_type,
-    DATE_TRUNC('month', pickup_datetime) AS month_start,
-    EXTRACT(YEAR FROM pickup_datetime) AS year,
-    EXTRACT(MONTH FROM pickup_datetime) AS month,
-    PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY fare_amount) 
+    year,
+    month,
+    PERCENTILE_CONT(fare_amount, 0.90)
         OVER (PARTITION BY service_type, year, month) AS fare_p90,
-    PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY fare_amount) 
+    PERCENTILE_CONT(fare_amount, 0.95) 
         OVER (PARTITION BY service_type, year, month) AS fare_p95,
-    PERCENTILE_CONT(0.97) WITHIN GROUP (ORDER BY fare_amount) 
+    PERCENTILE_CONT(fare_amount, 0.97)
         OVER (PARTITION BY service_type, year, month) AS fare_p97
-FROM {{ ref('fact_trips') }}
-WHERE 
-    fare_amount > 0  -- Exclude invalid fares
-    AND trip_distance > 0  -- Exclude invalid distances
-    AND payment_type_description IN ('Cash', 'Credit Card')  -- Keep only valid payment types
+FROM filtered_trips
 ORDER BY service_type, year, month
 ```
 
 Now, what are the values of `p97`, `p95`, `p90` for Green Taxi and Yellow Taxi, in April 2020?
+
+```sql
+SELECT
+  service_type,
+  year,
+  month,
+  fare_p97,
+  fare_p95,
+  fare_p90
+FROM `ny-taxi-451623.dbt_michellea.fct_taxi_trips_monthly_fare_p95`
+WHERE year = 2020 AND month = 4
+```
 
 - green: {p97: 55.0, p95: 45.0, p90: 26.5}, yellow: {p97: 52.0, p95: 37.0, p90: 25.5}
 - green: {p97: 55.0, p95: 45.0, p90: 26.5}, yellow: {p97: 31.5, p95: 25.5, p90: 19.0}
@@ -223,21 +243,109 @@ Now, what are the values of `p97`, `p95`, `p90` for Green Taxi and Yellow Taxi, 
 - green: {p97: 40.0, p95: 33.0, p90: 24.5}, yellow: {p97: 31.5, p95: 25.5, p90: 19.0}
 - green: {p97: 55.0, p95: 45.0, p90: 26.5}, yellow: {p97: 52.0, p95: 25.5, p90: 19.0}
 
-Answer
+Answer green: {p97: 55.0, p95: 45.0, p90: 26.5}, yellow: {p97: 31.5, p95: 25.5, p90: 19.0}
 
 ## Q7: Top #Nth longest P90 travel time Location for FHV
 
 Prerequisites:
 * Create a staging model for FHV Data (2019), and **DO NOT** add a deduplication step, just filter out the entries where `where dispatching_base_num is not null`
+
+```sql
+{{
+    config(
+        materialized='view'
+    )
+}}
+
+with tripdata as 
+(
+  select *,
+    row_number() over(partition by Dispatching_base_num, Pickup_datetime) as rn
+  from {{ source('staging','fhv_tripdata') }}
+  where Dispatching_base_num is not null 
+)
+select
+    -- identifiers
+    {{ dbt_utils.generate_surrogate_key(['Dispatching_base_num', 'Pickup_datetime']) }} as tripid,
+    {{ dbt.safe_cast("Dispatching_base_num", api.Column.translate_type("string")) }} as dispatching_base_num,
+    {{ dbt.safe_cast("PUlocationid", api.Column.translate_type("integer")) }} as pickup_locationid,
+    {{ dbt.safe_cast("DOlocationid", api.Column.translate_type("integer")) }} as dropoff_locationid,
+
+    -- timestamps
+    cast(Pickup_datetime as timestamp) as pickup_datetime,
+    cast(DropOff_datetime as timestamp) as dropoff_datetime,
+
+    -- trip info
+    SR_Flag
+from tripdata
+where rn = 1 
+```
+
 * Create a core model for FHV Data (`dim_fhv_trips.sql`) joining with `dim_zones`. Similar to what has been done [here](../../../04-analytics-engineering/taxi_rides_ny/models/core/fact_trips.sql)
 * Add some new dimensions `year` (e.g.: 2019) and `month` (e.g.: 1, 2, ..., 12), based on `pickup_datetime`, to the core model to facilitate filtering for your queries
+* compute the [timestamp_diff](https://cloud.google.com/bigquery/docs/reference/standard-sql/timestamp_functions#timestamp_diff) in seconds between dropoff_datetime and pickup_datetime - we'll call it `trip_duration` for this exercise
+
+```sql
+{{ config(materialized='table') }}
+
+with fhv_tripdata as (
+    select *,
+        'FHV' as service_type
+    from {{ ref('stg_fhv_tripdata') }}
+),
+dim_zones as (
+    select * from {{ ref('dim_zones') }}
+    where borough != "Unknown"
+)
+select
+    fhv_tripdata.dispatching_base_num,
+    fhv_tripdata.service_type,
+    EXTRACT(year FROM fhv_tripdata.pickup_datetime) as year,
+    EXTRACT(month FROM fhv_tripdata.pickup_datetime) as month,
+    fhv_tripdata.pickup_locationid,
+    pickup_zone.borough as pickup_borough,
+    pickup_zone.zone as pickup_zone,
+    fhv_tripdata.dropoff_locationid,
+    dropoff_zone.borough as dropoff_borough,
+    dropoff_zone.zone as dropoff_zone,
+    fhv_tripdata.pickup_datetime,
+    fhv_tripdata.dropoff_datetime,
+    timestamp_diff(fhv_tripdata.dropoff_datetime, fhv_tripdata.pickup_datetime, SECOND) as trip_duration,
+    fhv_tripdata.SR_Flag
+from fhv_tripdata
+inner join dim_zones as pickup_zone
+on fhv_tripdata.pickup_locationid = pickup_zone.locationid
+inner join dim_zones as dropoff_zone
+on fhv_tripdata.dropoff_locationid = dropoff_zone.locationid
+```
 
 Now...
 1. Create a new model `fct_fhv_monthly_zone_traveltime_p90.sql`
-2. For each record in `dim_fhv_trips.sql`, compute the [timestamp_diff](https://cloud.google.com/bigquery/docs/reference/standard-sql/timestamp_functions#timestamp_diff) in seconds between dropoff_datetime and pickup_datetime - we'll call it `trip_duration` for this exercise
-3. Compute the **continous** `p90` of `trip_duration` partitioning by year, month, pickup_location_id, and dropoff_location_id
+2. Compute the **continous** `p90` of `trip_duration` partitioning by year, month, pickup_location_id, and dropoff_location_id
 
 For the Trips that **respectively** started from `Newark Airport`, `SoHo`, and `Yorkville East`, in November 2019, what are **dropoff_zones** with the 2nd longest p90 trip_duration ?
+
+```sql
+{{ config(materialized='table') }}
+
+with duration_data as (
+    select * from {{ ref('dim_fhv_trips') }}
+)
+
+select
+    service_type,
+    year,
+    month,
+    pickup_locationid,
+    pickup_zone,
+    dropoff_locationid,
+    dropoff_zone,
+    PERCENTILE_CONT(trip_duration, 0.9) OVER (PARTITION BY year, month, pickup_locationid, dropoff_locationid) as duration_p90
+from duration_data
+where month = 11
+    AND pickup_zone in ('Newark Airport', 'SoHo', 'Yorkville East')
+order by duration_p90 DESC
+```
 
 - LaGuardia Airport, Chinatown, Garment District
 - LaGuardia Airport, Park Slope, Clinton East
@@ -245,4 +353,4 @@ For the Trips that **respectively** started from `Newark Airport`, `SoHo`, and `
 - LaGuardia Airport, Rosedale, Bath Beach
 - LaGuardia Airport, Yorkville East, Greenpoint
  
- Answer
+ Answer LaGuardia Airport, Chinatown, Garment District
