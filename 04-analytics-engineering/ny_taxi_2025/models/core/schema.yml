@@ -5,6 +5,10 @@ models:
     description: >
       List of unique zones idefied by locationid. 
       Includes the service zone they correspond to (Green or yellow).
+  
+  - name: dim_fhv_trips
+    description: > 
+      Aggregated table of FHV trips with dim_zones.
 
   - name: dm_monthly_zone_revenue
     description: >
@@ -17,6 +21,16 @@ models:
         tests:
             - not_null:
                 severity: error
+
+  - name: fct_taxi_trips_quarterly_revenue.sql
+    description: >
+      Aggregated table.
+      This table contains the quarerly revenue of total amount.
+
+  - name: fct_taxi_trips_monthly_fare_p95.sql
+    description: >
+      Aggregated table.
+      This table contains the continuous percentile of fare amount partitioned by service_type, year, and month.
       
   - name: fact_trips
     description: >

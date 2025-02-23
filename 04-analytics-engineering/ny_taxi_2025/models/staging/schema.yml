@@ -10,6 +10,7 @@ sources:
       - name: yellow_tripdata
          # freshness:
            # error_after: {count: 6, period: hour}
+      - name: fhv_tripdata
 
 models:
   - name: stg_green_tripdata
@@ -194,3 +195,31 @@ models:
         description: Total amount of all tolls paid in trip.
       - name: Total_amount 
         description: The total amount charged to passengers. Does not include cash tips.
+  - name: stg_fhv_tripdata
+    description: > 
+      For-Hire Vehicle (“FHV”) trip records include fields capturing the dispatching
+      base license number and the pick-up date, time, and taxi zone location ID. These
+      records are generated from the FHV Trip Record submissions made by bases.
+    columns:
+      - name: Dispatching_base_num
+        description: The TLC Base License Number of the base that dispatched the trip.
+      - name: Pickup_datetime
+        description: The date and time of the trip pick-up.
+      - name: DropOff_datetime
+        description: The date and time of the trip dropoff.
+      - name: PULocationID
+        description: TLC Taxi Zone in which the trip began.
+      - name: DOLocationID
+        description: TLC Taxi Zone in which the trip ended.
+      - name: SR_Flag
+        description: > 
+          Indicates if the trip was a part of a shared ride chain offered by a High Volume
+          FHV company (e.g. Uber Pool, Lyft Line). For shared trips, the value is 1. For 
+          non-shared rides, this field is null. NOTE: For most High Volume FHV companies,
+          only shared rides that were requested AND matched to another shared-ride request
+          over the course of the journey are flagged. However, Lyft (base license numbers
+          B02510 + B02844) also flags rides for which a shared ride was requested but
+          another passenger was not successfully matched to share the trip—therefore,
+          trips records with SR_Flag=1 from those two bases could indicate EITHER a first trip
+          in a shared trip chain OR a trip for which a shared ride was requested but never matched.
+          Users should anticipate an overcount of successfully shared trips completed by Lyft.
