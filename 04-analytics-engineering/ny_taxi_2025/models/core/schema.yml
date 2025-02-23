@@ -17,6 +17,16 @@ models:
         tests:
             - not_null:
                 severity: error
+
+  - name: fct_taxi_trips_quarterly_revenue.sql
+    description: >
+      Aggregated table.
+      This table contains the quarerly revenue of total amount.
+
+  - name: fct_taxi_trips_monthly_fare_p95.sql
+    description: >
+      Aggregated table.
+      This table contains the continuous percentile of fare amount partitioned by service_type, year, and month.
       
   - name: fact_trips
     description: >
