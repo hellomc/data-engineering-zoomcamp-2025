@@ -194,26 +194,24 @@ Answer green: {best: 2020/Q1, worst: 2020/Q2}, yellow: {best: 2020/Q1, worst: 20
 3. Compute the **continous percentile** of `fare_amount` partitioning by service_type, year and and month
 
 ```sql
+{{ config(materialized='table') }}
+
 SELECT
     service_type,
     DATE_TRUNC('month', pickup_datetime) AS month_start,
     EXTRACT(YEAR FROM pickup_datetime) AS year,
     EXTRACT(MONTH FROM pickup_datetime) AS month,
-    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY fare_amount) 
-        OVER (PARTITION BY service_type, year, month) AS fare_p50, -- Median
-    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY fare_amount) 
-        OVER (PARTITION BY service_type, year, month) AS fare_p75,
     PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY fare_amount) 
         OVER (PARTITION BY service_type, year, month) AS fare_p90,
     PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY fare_amount) 
         OVER (PARTITION BY service_type, year, month) AS fare_p95,
-    PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY fare_amount) 
-        OVER (PARTITION BY service_type, year, month) AS fare_p99
-FROM taxi_trips
+    PERCENTILE_CONT(0.97) WITHIN GROUP (ORDER BY fare_amount) 
+        OVER (PARTITION BY service_type, year, month) AS fare_p97
+FROM {{ ref('fact_trips') }}
 WHERE 
-    fare_amount > 0 
-    AND trip_distance > 0 
-    AND payment_type_description IN ('Cash', 'Credit Card')
+    fare_amount > 0  -- Exclude invalid fares
+    AND trip_distance > 0  -- Exclude invalid distances
+    AND payment_type_description IN ('Cash', 'Credit Card')  -- Keep only valid payment types
 ORDER BY service_type, year, month
 ```
 
