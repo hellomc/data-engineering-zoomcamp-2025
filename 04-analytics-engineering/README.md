@@ -15,6 +15,7 @@ Set up dbt to be used in BigQuery
 ## Q1: Understanding dbt model resolution
 
 Provided you've got the following sources.yaml
+
 ```yaml
 version: 2
 
@@ -28,12 +29,14 @@ sources:
 ```
 
 with the following env variables setup where `dbt` runs:
+
 ```shell
 export DBT_BIGQUERY_PROJECT=myproject
 export DBT_BIGQUERY_DATASET=my_nyc_tripdata
 ```
 
 What does this .sql model compile to?
+
 ```sql
 select * 
 from {{ source('raw_nyc_tripdata', 'ext_green_taxi' ) }}
@@ -68,7 +71,7 @@ What would you change to accomplish that in a such way that command line argumen
 - Update the WHERE clause to `pickup_datetime >= CURRENT_DATE - INTERVAL '{{ var("days_back", env_var("DAYS_BACK", "30")) }}' DAY`
 - Update the WHERE clause to `pickup_datetime >= CURRENT_DATE - INTERVAL '{{ env_var("DAYS_BACK", var("days_back", "30")) }}' DAY`
 
-Answer
+Answer Update the WHERE clause to `pickup_datetime >= CURRENT_DATE - INTERVAL '{{ var("days_back", env_var("DAYS_BACK", "30")) }}' DAY`
 
 ## Q3: dbt Data Lineage and Execution
 
@@ -86,9 +89,9 @@ Select the option that does **NOT** apply for materializing `fct_taxi_monthly_zo
 
 Answer: `dbt run --select models/staging/+`
  
- ## Q4: dbt Macros and Jinja
+## Q4: dbt Macros and Jinja
 
-Consider you're dealing with sensitive data (e.g.: [PII](https://en.wikipedia.org/wiki/Personal_data)), that is **only available to your team and very selected few individuals**, in the `raw layer` of your DWH (e.g: a specific BigQuery dataset or PostgreSQL schema), 
+Consider you're dealing with sensitive data (e.g.: [PII](https://en.wikipedia.org/wiki/Personal_data)), that is **only available to your team and very selected few individuals**, in the `raw layer` of your DWH (e.g: a specific BigQuery dataset or PostgreSQL schema),
 
  - Among other things, you decide to obfuscate/masquerade that data through your staging models, and make it available in a different schema (a `staging layer`) for other Data/Analytics Engineers to explore
 
@@ -110,6 +113,7 @@ You decide to make a macro to wrap a logic around it:
 ```
 
 And use on your staging, dim_ and fact_ models as:
+
 ```sql
 {{ config(
     schema=resolve_schema_for('core'), 
@@ -117,13 +121,14 @@ And use on your staging, dim_ and fact_ models as:
 ```
 
 That all being said, regarding macro above, **select all statements that are true to the models using it**:
+
 - Setting a value for  `DBT_BIGQUERY_TARGET_DATASET` env var is mandatory, or it'll fail to compile
 - Setting a value for `DBT_BIGQUERY_STAGING_DATASET` env var is mandatory, or it'll fail to compile
 - When using `core`, it materializes in the dataset defined in `DBT_BIGQUERY_TARGET_DATASET`
 - When using `stg`, it materializes in the dataset defined in `DBT_BIGQUERY_STAGING_DATASET`, or defaults to `DBT_BIGQUERY_TARGET_DATASET`
 - When using `staging`, it materializes in the dataset defined in `DBT_BIGQUERY_STAGING_DATASET`, or defaults to `DBT_BIGQUERY_TARGET_DATASET`
 
-Answer
+Answer All of the above
 
 
 ## Q5:  Taxi Quarterly Revenue Growth
@@ -171,9 +176,8 @@ SELECT * FROM quarterly_compare
 ```
 
 run command
-```
-dbt build --select fct_taxi_trips_quarterly_revenue
-```
+
+`dbt build --select fct_taxi_trips_quarterly_revenue`
 
 Considering the YoY Growth in 2020, which were the yearly quarters with the best (or less worse) and worst results for green, and yellow
 
@@ -320,6 +324,7 @@ on fhv_tripdata.dropoff_locationid = dropoff_zone.locationid
 ```
 
 Now...
+
 1. Create a new model `fct_fhv_monthly_zone_traveltime_p90.sql`
 2. Compute the **continous** `p90` of `trip_duration` partitioning by year, month, pickup_location_id, and dropoff_location_id
 
@@ -352,5 +357,5 @@ order by duration_p90 DESC
 - LaGuardia Airport, Saint Albans, Howard Beach
 - LaGuardia Airport, Rosedale, Bath Beach
 - LaGuardia Airport, Yorkville East, Greenpoint
- 
- Answer LaGuardia Airport, Chinatown, Garment District
+
+Answer LaGuardia Airport, Chinatown, Garment District
