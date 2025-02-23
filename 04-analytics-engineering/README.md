@@ -134,6 +134,47 @@ Answer
   * e.g.: In 2020/Q1, Green Taxi had -12.34% revenue growth compared to 2019/Q1
   * e.g.: In 2020/Q4, Yellow Taxi had +34.56% revenue growth compared to 2019/Q4
 
+```sql
+{{ config(materialized='table') }}
+
+with quarterly_revenue AS (
+    SELECT
+        service_type,
+        EXTRACT(YEAR FROM pickup_datetime) AS year,
+        EXTRACT(QUARTER FROM pickup_datetime) AS quarter,
+        SUM(total_amount) AS revenue
+    FROM {{ref('fact_trips')}}
+    WHERE EXTRACT(YEAR FROM pickup_datetime) IN (2019, 2020)
+    GROUP BY service_type, year, quarter
+),
+
+quarterly_compare AS (
+    SELECT
+        service_type,
+        year, 
+        quarter,
+        revenue,
+        LAG(revenue) OVER (
+            PARTITION BY service_type, quarter ORDER BY year
+        ) AS prev_quarter_revenue,
+        ROUND (
+            100 * (revenue - LAG(revenue) OVER (
+                PARTITION BY service_type, quarter ORDER BY year
+            )) / NULLIF(LAG(revenue) OVER (
+                PARTITION BY service_type, quarter ORDER BY year
+            ), 0), 2
+        ) AS qy_growth_percent
+    FROM quarterly_revenue
+)
+
+SELECT * FROM quarterly_compare
+```
+
+run command
+```
+dbt build --select fct_taxi_trips_quarterly_revenue
+```
+
 Considering the YoY Growth in 2020, which were the yearly quarters with the best (or less worse) and worst results for green, and yellow
 
 - green: {best: 2020/Q2, worst: 2020/Q1}, yellow: {best: 2020/Q2, worst: 2020/Q1}
@@ -142,13 +183,39 @@ Considering the YoY Growth in 2020, which were the yearly quarters with the best
 - green: {best: 2020/Q1, worst: 2020/Q2}, yellow: {best: 2020/Q1, worst: 2020/Q2}
 - green: {best: 2020/Q1, worst: 2020/Q2}, yellow: {best: 2020/Q3, worst: 2020/Q4}
 
-Answer
+![image](./img/hw_q5.png)
+
+Answer green: {best: 2020/Q1, worst: 2020/Q2}, yellow: {best: 2020/Q1, worst: 2020/Q2}
 
 ## Q6: : P97/P95/P90 Taxi Monthly Fare
 
 1. Create a new model `fct_taxi_trips_monthly_fare_p95.sql`
 2. Filter out invalid entries (`fare_amount > 0`, `trip_distance > 0`, and `payment_type_description in ('Cash', 'Credit Card')`)
 3. Compute the **continous percentile** of `fare_amount` partitioning by service_type, year and and month
+
+```sql
+SELECT
+    service_type,
+    DATE_TRUNC('month', pickup_datetime) AS month_start,
+    EXTRACT(YEAR FROM pickup_datetime) AS year,
+    EXTRACT(MONTH FROM pickup_datetime) AS month,
+    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY fare_amount) 
+        OVER (PARTITION BY service_type, year, month) AS fare_p50, -- Median
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY fare_amount) 
+        OVER (PARTITION BY service_type, year, month) AS fare_p75,
+    PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY fare_amount) 
+        OVER (PARTITION BY service_type, year, month) AS fare_p90,
+    PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY fare_amount) 
+        OVER (PARTITION BY service_type, year, month) AS fare_p95,
+    PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY fare_amount) 
+        OVER (PARTITION BY service_type, year, month) AS fare_p99
+FROM taxi_trips
+WHERE 
+    fare_amount > 0 
+    AND trip_distance > 0 
+    AND payment_type_description IN ('Cash', 'Credit Card')
+ORDER BY service_type, year, month
+```
 
 Now, what are the values of `p97`, `p95`, `p90` for Green Taxi and Yellow Taxi, in April 2020?
 
