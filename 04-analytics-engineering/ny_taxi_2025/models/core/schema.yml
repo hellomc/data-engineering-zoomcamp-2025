@@ -5,6 +5,10 @@ models:
     description: >
       List of unique zones idefied by locationid. 
       Includes the service zone they correspond to (Green or yellow).
+  
+  - name: dim_fhv_trips
+    description: > 
+      Aggregated table of FHV trips with dim_zones.
 
   - name: dm_monthly_zone_revenue
     description: >
