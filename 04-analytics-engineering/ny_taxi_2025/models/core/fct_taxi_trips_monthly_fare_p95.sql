@@ -3,7 +3,6 @@
 with filtered_trips AS (
     SELECT
         service_type,
-        DATE_TRUNC('month', pickup_datetime) AS month_start,
         EXTRACT(YEAR FROM pickup_datetime) AS year,
         EXTRACT(MONTH FROM pickup_datetime) AS month,
         fare_amount
@@ -16,14 +15,13 @@ with filtered_trips AS (
 
 SELECT
     service_type,
-    month_start,
     year,
     month,
-    PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY fare_amount) 
+    PERCENTILE_CONT(fare_amount, 0.90 RESPECT NULLS)
         OVER (PARTITION BY service_type, year, month) AS fare_p90,
-    PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY fare_amount) 
+    PERCENTILE_CONT(fare_amount, 0.95 RESPECT NULLS) 
         OVER (PARTITION BY service_type, year, month) AS fare_p95,
-    PERCENTILE_CONT(0.97) WITHIN GROUP (ORDER BY fare_amount) 
+    PERCENTILE_CONT(fare_amount, 0.97 RESPECT NULLS)
         OVER (PARTITION BY service_type, year, month) AS fare_p97
 FROM filtered_trips
 ORDER BY service_type, year, month
