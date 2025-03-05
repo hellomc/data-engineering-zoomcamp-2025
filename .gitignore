@@ -1,6 +1,8 @@
 *.gz
 *.csv
 *.parquet
+*/.DS_Store
+*.ipynb_checkpoints/
 
 01-docker-terraform/docker-sql/ny_taxi_postgres_data/
 01-docker-terraform/docker-sql/.ipynb_checkpoints/
@@ -9,3 +11,7 @@
 02-workflow-orchestration/keys/
 
 04-analytics-engineering/keys/
+
+05-batch-processing/data/
+05-batch-processing/fhhv/
+05-batch-processing/zones/
